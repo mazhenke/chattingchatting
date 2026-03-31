@@ -1,6 +1,6 @@
 from datetime import datetime, timezone, timedelta
 
-from flask import request
+from flask import request, session
 from flask_login import current_user
 from flask_socketio import emit, join_room, leave_room, disconnect
 
@@ -14,7 +14,7 @@ connected_users = {}
 
 
 @socketio.on('connect')
-def on_connect():
+def on_connect(auth=None):
     if not current_user.is_authenticated:
         return False
     
