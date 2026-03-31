@@ -73,6 +73,11 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============ Socket Events ============
 
 function setupSocket() {
+    socket.on('force_logout', (data) => {
+        alert(data.message || '您的账号在其他地方登录，您已被挤下线。');
+        window.location.href = '/auth/login';
+    });
+
     socket.on('connect', () => {
         myRooms.forEach(r => socket.emit('join_room', {room_id: r.id}));
     });

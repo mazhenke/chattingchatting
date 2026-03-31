@@ -1,8 +1,10 @@
 import sys
 import os
 import getpass
+from datetime import datetime
 
-from flask import Flask
+from flask import Flask, session, redirect, url_for, request
+from flask_login import current_user, logout_user
 
 from config import Config
 from extensions import db, login_manager, socketio
@@ -24,6 +26,22 @@ def create_app(config_overrides=None):
     def load_user(user_id):
         from models.user import User
         return db.session.get(User, int(user_id))
+
+    @app.before_request
+    def check_session_validity():
+        """Ensure the user's current session matches the one in the database."""
+        # Skip for static files and auth routes to avoid redirect loops or blocking login
+        if not request.endpoint or 'static' in request.endpoint or \
+           request.endpoint in ('auth.login', 'auth.logout', 'auth.register_step1', 'auth.register_step2', 'auth.register_confirm'):
+            return
+
+        if current_user.is_authenticated:
+            # Check for current_session_id in flask session
+            s_id = session.get('session_id')
+            if not s_id or s_id != current_user.current_session_id:
+                logout_user()
+                session.clear()
+                return redirect(url_for('auth.login'))
 
     from routes.auth import auth_bp
     from routes.chat import chat_bp

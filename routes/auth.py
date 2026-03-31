@@ -1,7 +1,9 @@
+import uuid
+from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, session
 from flask_login import login_user, logout_user, current_user
 
-from extensions import db
+from extensions import db, socketio
 from models.user import User
 from services.nickname import fetch_random_nickname
 
@@ -42,6 +44,11 @@ def register_step1():
             return jsonify(error='用户名已被使用'), 409
         return jsonify(error='邮箱已被使用'), 409
 
+    session['reg_step1_passed'] = {
+        'username': username,
+        'email': email,
+        'password': password
+    }
     return jsonify(valid=True)
 
 
@@ -98,26 +105,41 @@ def register_confirm():
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
+    if request.method == 'POST':
+        data = request.get_json()
+        login_id = data.get('login_id', '').strip()
+        password = data.get('password', '')
+        
+        # Allow login by username or email
+        user = User.query.filter(
+            (User.username == login_id) | (User.email == login_id)
+        ).first()
+
+        if not user or not user.check_password(password):
+            return jsonify(error='用户名/邮箱或密码错误'), 401
+        # Kick previous sessions
+        if user.current_session_id:
+            socketio.emit('force_logout', {
+                'message': '您的账号在别处登录，您已被挤下线。',
+                'reason': 'new_login'
+            }, room=f'user_{user.id}')
+
+        # Update session info
+        new_sid = uuid.uuid4().hex
+        user.current_session_id = new_sid
+        user.last_login_at = datetime.utcnow()
+        user.last_login_ip = request.remote_addr
+        db.session.commit()
+
+        session['session_id'] = new_sid
+        login_user(user)
+        return jsonify(success=True, redirect=url_for('chat.chat_page'))
+
+    # GET request
     if current_user.is_authenticated:
         return redirect(url_for('chat.chat_page'))
 
-    if request.method == 'GET':
-        return render_template('login.html')
-
-    data = request.get_json()
-    login_id = data.get('login_id', '').strip()
-    password = data.get('password', '')
-
-    # Allow login by username or email
-    user = User.query.filter(
-        (User.username == login_id) | (User.email == login_id)
-    ).first()
-
-    if not user or not user.check_password(password):
-        return jsonify(error='用户名/邮箱或密码错误'), 401
-
-    login_user(user)
-    return jsonify(success=True, redirect=url_for('chat.chat_page'))
+    return render_template('login.html')
 
 
 @auth_bp.route('/logout')

@@ -17,6 +17,12 @@ connected_users = {}
 def on_connect():
     if not current_user.is_authenticated:
         return False
+    
+    # Check session_id consistency for Socket connection
+    s_id = session.get('session_id')
+    if not s_id or s_id != current_user.current_session_id:
+        return False
+
     uid = current_user.id
     was_offline = uid not in connected_users
     if uid not in connected_users:

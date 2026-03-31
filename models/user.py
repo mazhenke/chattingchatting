@@ -22,6 +22,9 @@ class User(UserMixin, db.Model):
     nickname = db.Column(db.String(24), nullable=False)
     avatar = db.Column(db.String(256), nullable=True)  # path to avatar image
     is_admin = db.Column(db.Boolean, default=False)
+    current_session_id = db.Column(db.String(64), nullable=True)
+    last_login_ip = db.Column(db.String(45), nullable=True)
+    last_login_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     created_room = db.relationship('ChatRoom', backref='creator', uselist=False,
