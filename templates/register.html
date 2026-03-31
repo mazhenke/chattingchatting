@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}注册 - 匿名聊天室{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-logo">
+                <i class="bi bi-chat-heart-fill"></i>
+            </div>
+            <h3>创建账号</h3>
+            <p class="text-muted">加入匿名聊天室，开始你的对话</p>
+        </div>
+
+        <!-- Step indicator -->
+        <div class="step-indicator" id="step-indicator">
+            <div class="step active" id="step-dot-1">
+                <div class="step-circle">1</div>
+                <span>账号信息</span>
+            </div>
+            <div class="step-line" id="step-line"></div>
+            <div class="step" id="step-dot-2">
+                <div class="step-circle">2</div>
+                <span>选择昵称</span>
+            </div>
+        </div>
+
+        <!-- Step 1 -->
+        <div id="step1">
+            <div class="mb-3">
+                <label class="form-label"><i class="bi bi-person me-1"></i>用户名</label>
+                <input type="text" class="form-control form-control-lg" id="username"
+                       placeholder="字母、数字、下划线、连字符" maxlength="32">
+            </div>
+            <div class="mb-3">
+                <label class="form-label"><i class="bi bi-envelope me-1"></i>邮箱</label>
+                <input type="email" class="form-control form-control-lg" id="email" placeholder="your@email.com">
+            </div>
+            <div class="mb-3">
+                <label class="form-label"><i class="bi bi-lock me-1"></i>密码</label>
+                <input type="password" class="form-control form-control-lg" id="password" placeholder="至少6位" minlength="6">
+            </div>
+            <div class="mb-3">
+                <label class="form-label"><i class="bi bi-lock-fill me-1"></i>确认密码</label>
+                <input type="password" class="form-control form-control-lg" id="password2" placeholder="再次输入密码">
+            </div>
+            <div id="step1-error" class="alert alert-danger d-none"></div>
+            <button class="btn btn-primary btn-lg w-100 rounded-pill" id="btn-step1">
+                下一步 <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+        </div>
+
+        <!-- Step 2 -->
+        <div id="step2" class="d-none">
+            <div class="mb-3">
+                <label class="form-label"><i class="bi bi-emoji-smile me-1"></i>选择昵称</label>
+                <div class="input-group input-group-lg">
+                    <input type="text" class="form-control" id="nickname"
+                           placeholder="输入昵称或点击骰子随机生成" maxlength="24">
+                    <button class="btn btn-outline-secondary dice-btn" id="btn-dice" title="随机生成昵称">
+                        🎲
+                    </button>
+                </div>
+                <small class="form-text text-muted">最多24个字符（12个汉字），支持中文、字母、数字</small>
+            </div>
+            <div id="step2-error" class="alert alert-danger d-none"></div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary btn-lg flex-fill rounded-pill" id="btn-back">
+                    <i class="bi bi-arrow-left me-1"></i> 上一步
+                </button>
+                <button class="btn btn-success btn-lg flex-fill rounded-pill" id="btn-confirm">
+                    确认注册 <i class="bi bi-check-lg ms-1"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Success -->
+        <div id="step-success" class="d-none text-center py-4">
+            <div class="auth-success-icon">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <h4 class="mt-3">注册成功！</h4>
+            <p class="text-muted">你的账号已创建，现在可以登录了</p>
+            <a href="/auth/login" class="btn btn-primary btn-lg rounded-pill px-5 mt-2">
+                <i class="bi bi-box-arrow-in-right me-1"></i> 去登录
+            </a>
+        </div>
+
+        <div class="text-center mt-4" id="login-link">
+            <small class="text-muted">已有账号？<a href="/auth/login" class="auth-link">去登录</a></small>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/register.js"></script>
+{% endblock %}

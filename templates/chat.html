@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+{% block title %}聊天 - 匿名聊天室{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/socket.io-client@4/dist/socket.io.min.js"></script>
+{% endblock %}
+
+{% block body %}
+<div class="chat-container">
+    <!-- Top navbar -->
+    <nav class="navbar chat-navbar px-3">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-chat-heart-fill text-primary" style="font-size:1.4rem;"></i>
+            <span class="navbar-brand mb-0 fw-bold">匿名聊天室</span>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="nav-user-info" onclick="showProfileModal()" style="cursor:pointer;" title="个人设置">
+                {% if user.avatar %}
+                <img src="{{ user.avatar }}" class="nav-avatar">
+                {% else %}
+                <div class="nav-avatar nav-avatar-default">{{ user.nickname[0] }}</div>
+                {% endif %}
+                <span class="nav-nickname">{{ user.nickname }}</span>
+            </div>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="bi bi-three-dots-vertical"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="#" onclick="showProfileModal()"><i class="bi bi-person-gear me-2"></i>个人设置</a></li>
+                    {% if user.is_admin %}
+                    <li><a class="dropdown-item" href="/admin"><i class="bi bi-shield-lock me-2"></i>管理后台</a></li>
+                    {% endif %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="/auth/logout"><i class="bi bi-box-arrow-right me-2"></i>退出登录</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main 3-panel layout -->
+    <div class="chat-main">
+        <!-- Left: Lobby -->
+        <div class="chat-panel chat-lobby">
+            <div class="panel-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-globe2 text-primary"></i>
+                    <h6 class="mb-0">大厅</h6>
+                </div>
+                <button class="btn btn-sm btn-primary rounded-pill" onclick="showCreateRoomModal()">
+                    <i class="bi bi-plus-lg"></i> 创建
+                </button>
+            </div>
+            <div class="panel-body" id="lobby-list">
+                <div class="empty-state" id="lobby-empty">
+                    <i class="bi bi-door-open"></i>
+                    <p>暂无聊天室</p>
+                    <small>点击"创建"开启第一个聊天室</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center: Chat area -->
+        <div class="chat-panel chat-area">
+            <div class="panel-header chat-area-header" id="chat-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div id="chat-room-icon-wrap" class="d-none">
+                        <img id="chat-room-icon" src="" class="room-icon-header">
+                    </div>
+                    <div id="chat-room-default-icon-wrap" class="d-none">
+                        <div class="room-icon-header room-icon-default"><i class="bi bi-chat-dots-fill"></i></div>
+                    </div>
+                    <h6 class="mb-0" id="chat-room-name">选择一个聊天室</h6>
+                </div>
+                <div id="chat-header-actions" class="d-none">
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="showRoomSettings()" title="聊天室设置">
+                        <i class="bi bi-gear"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="panel-body chat-messages" id="chat-messages">
+                <div class="empty-state mt-5" id="chat-placeholder">
+                    <i class="bi bi-chat-square-text" style="font-size: 4rem; color: #c5cae9;"></i>
+                    <p>选择或加入一个聊天室开始聊天</p>
+                    <small class="text-muted">在左侧大厅选择一个聊天室，或创建属于你的聊天室</small>
+                </div>
+            </div>
+            <div class="chat-input-bar d-none" id="chat-input-bar">
+                <div class="input-tools">
+                    <button class="btn btn-sm tool-btn" id="btn-emoji" title="Emoji">
+                        <i class="bi bi-emoji-smile"></i>
+                    </button>
+                    <button class="btn btn-sm tool-btn" id="btn-image" title="发送图片">
+                        <i class="bi bi-image"></i>
+                    </button>
+                    <input type="file" id="image-input" accept="image/*" class="d-none">
+                </div>
+                <div class="input-area">
+                    <textarea id="msg-input" placeholder="输入消息... (Enter发送, Shift+Enter换行)"
+                              rows="1"></textarea>
+                    <button class="btn btn-primary rounded-circle send-btn" id="btn-send">
+                        <i class="bi bi-send-fill"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="emoji-picker-container" class="d-none"></div>
+        </div>
+
+        <!-- Right: My rooms + Members -->
+        <div class="chat-panel chat-right">
+            <div class="right-top">
+                <div class="panel-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-collection text-success"></i>
+                        <h6 class="mb-0">我的聊天室</h6>
+                    </div>
+                </div>
+                <div class="panel-body" id="my-rooms-list">
+                    <div class="empty-state small" id="my-rooms-empty">
+                        <i class="bi bi-inbox"></i>
+                        <p>未加入任何聊天室</p>
+                    </div>
+                </div>
+            </div>
+            <div class="right-bottom">
+                <div class="panel-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-people-fill text-info"></i>
+                        <h6 class="mb-0">成员列表</h6>
+                    </div>
+                    <span class="badge bg-info rounded-pill" id="member-count">0</span>
+                </div>
+                <div class="panel-body" id="member-list">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Room Modal -->
+<div class="modal fade" id="createRoomModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title"><i class="bi bi-plus-circle me-2 text-primary"></i>创建聊天室</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">聊天室名称</label>
+                    <input type="text" class="form-control" id="room-name-input" placeholder="给你的聊天室起个名字" maxlength="64">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">聊天室图标（可选）</label>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="room-icon-preview" id="create-room-icon-preview">
+                            <i class="bi bi-chat-dots-fill"></i>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('create-room-icon-input').click()">选择图片</button>
+                        <input type="file" id="create-room-icon-input" accept="image/png,image/jpeg,image/webp" class="d-none">
+                    </div>
+                </div>
+                <div id="create-room-error" class="text-danger mt-2 d-none"></div>
+            </div>
+            <div class="modal-footer border-0">
+                <button class="btn btn-primary rounded-pill px-4" onclick="createRoom()">创建</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Room Settings Modal -->
+<div class="modal fade" id="roomSettingsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title"><i class="bi bi-gear me-2"></i>聊天室设置</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Room icon change -->
+                <h6><i class="bi bi-image me-1"></i>聊天室图标</h6>
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="room-icon-preview" id="settings-room-icon-preview">
+                        <i class="bi bi-chat-dots-fill"></i>
+                    </div>
+                    <button class="btn btn-sm btn-outline-secondary" id="btn-change-room-icon" onclick="document.getElementById('room-icon-input').click()">更换图标</button>
+                    <input type="file" id="room-icon-input" accept="image/png,image/jpeg,image/webp" class="d-none">
+                </div>
+                <hr>
+                <!-- Pending join requests -->
+                <h6><i class="bi bi-person-plus me-1"></i>加入申请</h6>
+                <div id="join-requests-list" class="mb-3">
+                    <p class="text-muted small">无待处理申请</p>
+                </div>
+                <hr>
+                <!-- Invite user -->
+                <h6><i class="bi bi-envelope me-1"></i>邀请用户</h6>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="invite-username" placeholder="输入用户名">
+                    <button class="btn btn-primary" onclick="inviteUser()">邀请</button>
+                </div>
+                <div id="invite-error" class="text-danger d-none"></div>
+                <hr>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-warning btn-sm rounded-pill" onclick="leaveCurrentRoom()"><i class="bi bi-box-arrow-left me-1"></i>退出聊天室</button>
+                    <button class="btn btn-outline-danger btn-sm rounded-pill" id="btn-dissolve" onclick="dissolveRoom()"><i class="bi bi-trash me-1"></i>解散聊天室</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Profile Modal -->
+<div class="modal fade" id="profileModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title"><i class="bi bi-person-gear me-2"></i>个人设置</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Avatar -->
+                <div class="text-center mb-4">
+                    <div class="profile-avatar-wrap" onclick="document.getElementById('avatar-input').click()" title="点击更换头像">
+                        <img id="profile-avatar-img" src="" class="profile-avatar d-none">
+                        <div id="profile-avatar-default" class="profile-avatar profile-avatar-letter"></div>
+                        <div class="avatar-overlay"><i class="bi bi-camera-fill"></i></div>
+                    </div>
+                    <input type="file" id="avatar-input" accept="image/png,image/jpeg,image/webp" class="d-none">
+                    <p class="text-muted small mt-1">点击头像更换</p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">用户名</label>
+                    <input type="text" class="form-control" id="profile-username" maxlength="32">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">邮箱</label>
+                    <input type="email" class="form-control" id="profile-email">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">昵称</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="profile-nickname" maxlength="24">
+                        <button class="btn btn-outline-secondary" onclick="randomNickname()" title="随机生成">🎲</button>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">新密码（留空不修改）</label>
+                    <input type="password" class="form-control" id="profile-password" placeholder="至少6位">
+                </div>
+                <div id="profile-error" class="alert alert-danger py-2 d-none"></div>
+                <div id="profile-success" class="alert alert-success py-2 d-none"></div>
+            </div>
+            <div class="modal-footer border-0">
+                <button class="btn btn-outline-danger rounded-pill" onclick="deleteAccount()">注销账号</button>
+                <button class="btn btn-primary rounded-pill px-4" onclick="saveProfile()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Image lightbox -->
+<div class="modal fade" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content bg-transparent border-0 shadow-none">
+            <div class="text-center">
+                <img id="lightbox-image" src="" class="img-fluid rounded" style="max-height:85vh;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mute Modal -->
+<div class="modal fade" id="muteModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title"><i class="bi bi-mic-mute me-2 text-warning"></i>禁言设置</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="mute-user-id">
+                <div class="mb-3">
+                    <label class="form-label">禁言时长</label>
+                    <select class="form-select" id="mute-duration">
+                        <option value="">永久禁言</option>
+                        <option value="5">5分钟</option>
+                        <option value="30">30分钟</option>
+                        <option value="60">1小时</option>
+                        <option value="1440">1天</option>
+                        <option value="10080">7天</option>
+                        <option value="43200">30天</option>
+                        <option value="525600">1年</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button class="btn btn-warning rounded-pill px-4" onclick="confirmMute()">确认禁言</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const CURRENT_USER = {
+        id: {{ user.id }},
+        username: "{{ user.username }}",
+        nickname: "{{ user.nickname }}",
+        avatar: {{ ('"%s"' % user.avatar) if user.avatar else 'null' }},
+        is_admin: {{ 'true' if user.is_admin else 'false' }}
+    };
+</script>
+{% endblock %}
+
+{% block extra_scripts %}
+<script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
+<script src="/static/js/chat.js"></script>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}登录 - 匿名聊天室{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-logo">
+                <i class="bi bi-chat-heart-fill"></i>
+            </div>
+            <h3>欢迎回来</h3>
+            <p class="text-muted">登录你的匿名聊天室账号</p>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label"><i class="bi bi-person me-1"></i>用户名或邮箱</label>
+            <input type="text" class="form-control form-control-lg" id="login_id" placeholder="用户名或邮箱">
+        </div>
+        <div class="mb-3">
+            <label class="form-label"><i class="bi bi-lock me-1"></i>密码</label>
+            <input type="password" class="form-control form-control-lg" id="password" placeholder="密码">
+        </div>
+        <div id="login-error" class="alert alert-danger d-none"></div>
+        <button class="btn btn-primary btn-lg w-100 rounded-pill" id="btn-login">
+            <i class="bi bi-box-arrow-in-right me-1"></i> 登录
+        </button>
+        <div class="text-center mt-4">
+            <small class="text-muted">没有账号？<a href="/auth/register" class="auth-link">去注册</a></small>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('btn-login').addEventListener('click', doLogin);
+document.getElementById('password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+});
+document.getElementById('login_id').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+});
+
+async function doLogin() {
+    const loginId = document.getElementById('login_id').value.trim();
+    const password = document.getElementById('password').value;
+    const errDiv = document.getElementById('login-error');
+    errDiv.classList.add('d-none');
+
+    if (!loginId || !password) {
+        errDiv.textContent = '请输入用户名/邮箱和密码';
+        errDiv.classList.remove('d-none');
+        return;
+    }
+
+    const res = await fetch('/auth/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({login_id: loginId, password})
+    });
+    const data = await res.json();
+
+    if (data.success) {
+        window.location.href = data.redirect;
+    } else {
+        errDiv.textContent = data.error;
+        errDiv.classList.remove('d-none');
+    }
+}
+</script>
+{% endblock %}

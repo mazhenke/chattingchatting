@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}管理后台 - 匿名聊天室{% endblock %}
+
+{% block body %}
+<div class="admin-page">
+    <!-- Admin Navbar -->
+    <nav class="navbar admin-navbar px-3">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-shield-lock-fill text-primary" style="font-size:1.3rem;"></i>
+            <span class="navbar-brand mb-0 fw-bold">管理后台</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="/chat" class="btn btn-sm btn-outline-primary rounded-pill">
+                <i class="bi bi-chat-dots me-1"></i>返回聊天
+            </a>
+            <a href="/auth/logout" class="btn btn-sm btn-outline-danger rounded-pill">
+                <i class="bi bi-box-arrow-right me-1"></i>退出
+            </a>
+        </div>
+    </nav>
+
+    <div class="admin-content">
+        <!-- Tab navigation -->
+        <ul class="nav nav-pills admin-tabs" id="adminTabs">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-users">
+                    <i class="bi bi-people-fill me-1"></i>用户管理
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-rooms">
+                    <i class="bi bi-door-open-fill me-1"></i>聊天室管理
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-messages">
+                    <i class="bi bi-chat-left-text-fill me-1"></i>消息审计
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content mt-3">
+            <!-- Users Tab -->
+            <div class="tab-pane fade show active" id="tab-users">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h6 class="mb-0"><i class="bi bi-search me-1"></i>搜索用户</h6>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="d-flex gap-2 mb-3">
+                            <input type="text" class="form-control" id="user-search" placeholder="搜索用户名/邮箱/昵称" style="max-width:320px;">
+                            <button class="btn btn-primary rounded-pill px-4" onclick="searchUsers()">
+                                <i class="bi bi-search me-1"></i>搜索
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th><th>用户名</th><th>昵称</th><th>邮箱</th><th>管理员</th><th>注册时间</th><th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-tbody"></tbody>
+                            </table>
+                        </div>
+                        <nav><ul class="pagination" id="users-pagination"></ul></nav>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rooms Tab -->
+            <div class="tab-pane fade" id="tab-rooms">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h6 class="mb-0"><i class="bi bi-door-open me-1"></i>所有聊天室</h6>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover admin-table">
+                                <thead>
+                                    <tr><th>ID</th><th>名称</th><th>创建者</th><th>成员数</th><th>创建时间</th><th>操作</th></tr>
+                                </thead>
+                                <tbody id="rooms-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages Tab -->
+            <div class="tab-pane fade" id="tab-messages">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h6 class="mb-0"><i class="bi bi-funnel me-1"></i>筛选消息</h6>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="d-flex gap-2 mb-3 flex-wrap">
+                            <input type="number" class="form-control" id="msg-room-filter" placeholder="聊天室ID" style="max-width:130px;">
+                            <input type="number" class="form-control" id="msg-user-filter" placeholder="用户ID" style="max-width:130px;">
+                            <input type="text" class="form-control" id="msg-keyword-filter" placeholder="关键词" style="max-width:200px;">
+                            <button class="btn btn-primary rounded-pill px-4" onclick="searchMessages()">
+                                <i class="bi bi-search me-1"></i>搜索
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover admin-table">
+                                <thead>
+                                    <tr><th>ID</th><th>聊天室</th><th>用户</th><th>类型</th><th>内容</th><th>时间</th><th>操作</th></tr>
+                                </thead>
+                                <tbody id="messages-tbody"></tbody>
+                            </table>
+                        </div>
+                        <nav><ul class="pagination" id="messages-pagination"></ul></nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Permission Modal -->
+<div class="modal fade" id="permModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title"><i class="bi bi-shield-exclamation me-2 text-warning"></i>添加权限</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="perm-user-id">
+                <select class="form-select mb-2" id="perm-type">
+                    <option value="ban_all_rooms">禁止进入所有聊天室</option>
+                    <option value="ban_create_room">禁止创建聊天室</option>
+                    <option value="ban_speak">禁止发言</option>
+                    <option value="ban_room">禁止进入指定聊天室</option>
+                </select>
+                <input type="number" class="form-control d-none" id="perm-room-id" placeholder="聊天室ID">
+            </div>
+            <div class="modal-footer border-0">
+                <button class="btn btn-warning rounded-pill px-4" onclick="addPermission()">确认</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Permissions List Modal -->
+<div class="modal fade" id="userPermsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title"><i class="bi bi-list-check me-2"></i>用户权限列表</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="perms-list-user-id">
+                <div id="perms-list-container"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Room Members Modal -->
+<div class="modal fade" id="roomMembersModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title"><i class="bi bi-people me-2"></i>聊天室成员</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="room-members-container"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/admin.js"></script>
+{% endblock %}
