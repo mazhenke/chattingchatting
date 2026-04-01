@@ -877,9 +877,21 @@ async function saveProfile() {
         if (data.error) { errDiv.textContent = data.error; errDiv.classList.remove('d-none'); return; }
     }
 
+    // 更新内存中的用户信息，避免整页刷新导致聊天室状态丢失
+    const latest = await fetch('/api/users/me').then(r => r.json());
+    CURRENT_USER.username = latest.username;
+    CURRENT_USER.nickname = latest.nickname;
+
+    // 更新导航栏昵称显示
+    const navNick = document.querySelector('.nav-nickname');
+    if (navNick) navNick.textContent = latest.nickname;
+
     okDiv.textContent = '保存成功';
     okDiv.classList.remove('d-none');
-    setTimeout(() => location.reload(), 1000);
+    setTimeout(() => {
+        bootstrap.Modal.getInstance(document.getElementById('profileModal')).hide();
+        okDiv.classList.add('d-none');
+    }, 1000);
 }
 
 async function deleteAccount() {
