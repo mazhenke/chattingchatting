@@ -314,13 +314,13 @@
 </div>
 
 <script>
-    const CURRENT_USER = {
-        id: {{ user.id }},
-        username: "{{ user.username }}",
-        nickname: "{{ user.nickname }}",
-        avatar: {{ ('"%s"' % user.avatar) if user.avatar else 'null' }},
-        is_admin: {{ 'true' if user.is_admin else 'false' }}
-    };
+    const CURRENT_USER = {{ {
+        'id': user.id,
+        'username': user.username,
+        'nickname': user.nickname,
+        'avatar': user.avatar,
+        'is_admin': user.is_admin
+    } | tojson | safe }};
 </script>
 {% endblock %}
 
