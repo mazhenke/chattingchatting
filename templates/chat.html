@@ -319,7 +319,8 @@
         username: "{{ user.username }}",
         nickname: "{{ user.nickname }}",
         avatar: {{ ('"%s"' % user.avatar) if user.avatar else 'null' }},
-        is_admin: {{ 'true' if user.is_admin else 'false' }}
+        is_admin: {{ 'true' if user.is_admin else 'false' }},
+        timezone: "{{ user_timezone }}"
     };
 </script>
 {% endblock %}

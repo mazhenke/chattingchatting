@@ -27,6 +27,15 @@ const ROOM_GRADIENTS = [
     'linear-gradient(135deg, #fccb90, #d57eeb)',
 ];
 
+function formatTime(isoStr) {
+    const tz = (typeof CURRENT_USER !== 'undefined' && CURRENT_USER.timezone) || 'UTC';
+    return new Date(isoStr).toLocaleTimeString('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: tz
+    });
+}
+
 function getAvatarGradient(id) {
     return AVATAR_GRADIENTS[id % AVATAR_GRADIENTS.length];
 }
@@ -470,7 +479,7 @@ function appendMessage(msg) {
     div.className = `msg-bubble ${isSelf ? 'msg-self' : ''}`;
     div.dataset.msgId = msg.id;
 
-    const time = new Date(msg.created_at).toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+    const time = formatTime(msg.created_at);
 
     let bodyContent;
     if (msg.is_recalled) {
@@ -543,7 +552,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const temp = document.createElement('div');
                 temp.className = `msg-bubble ${isSelf ? 'msg-self' : ''}`;
                 temp.dataset.msgId = m.id;
-                const time = new Date(m.created_at).toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+                const time = formatTime(m.created_at);
                 let bodyContent;
                 if (m.is_recalled) bodyContent = '<div class="msg-body msg-recalled">消息已撤回</div>';
                 else if (m.msg_type === 'image') bodyContent = `<div class="msg-body" style="padding:4px;"><img class="msg-image" src="${escapeHtml(m.content)}" onclick="showImageLightbox('${escapeHtml(m.content)}')" loading="lazy"></div>`;

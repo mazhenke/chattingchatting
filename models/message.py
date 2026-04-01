@@ -24,5 +24,5 @@ class Message(db.Model):
             'msg_type': self.msg_type,
             'content': '' if self.is_recalled else self.content,
             'is_recalled': self.is_recalled,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'created_at': self.created_at.strftime('%Y-%m-%dT%H:%M:%SZ') if self.created_at else None,
         }
