@@ -58,6 +58,12 @@ function renderRoomIcon(icon, roomId, size) {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
+    // Add mobile backdrop
+    const backdrop = document.createElement('div');
+    backdrop.className = 'panel-backdrop';
+    backdrop.onclick = closeAllPanels;
+    document.body.appendChild(backdrop);
+
     socket = io();
     setupSocket();
     loadLobby();
@@ -274,6 +280,33 @@ function switchRoom(roomId, roomName) {
     socket.emit('join_room', {room_id: roomId});
     loadMembers(roomId);
     renderMyRooms();
+    
+    // 统一逻辑：切换房间后自动关闭侧边栏面板
+    closeAllPanels();
+}
+
+// ... rest of existing code ...
+
+// ============ Mobile UI ============
+
+function toggleLobby() {
+    const lobby = document.querySelector('.chat-lobby');
+    const backdrop = document.querySelector('.panel-backdrop');
+    lobby.classList.toggle('show');
+    backdrop.classList.toggle('show', lobby.classList.contains('show'));
+}
+
+function toggleRightPanel() {
+    const right = document.querySelector('.chat-right');
+    const backdrop = document.querySelector('.panel-backdrop');
+    right.classList.toggle('show');
+    backdrop.classList.toggle('show', right.classList.contains('show'));
+}
+
+function closeAllPanels() {
+    document.querySelector('.chat-lobby').classList.remove('show');
+    document.querySelector('.chat-right').classList.remove('show');
+    document.querySelector('.panel-backdrop').classList.remove('show');
 }
 
 function resetChatArea() {

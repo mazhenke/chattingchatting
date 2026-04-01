@@ -1068,10 +1068,62 @@ html, body {
     border-radius: 6px;
 }
 
-/* ===== Responsive ===== */
-@media (max-width: 768px) {
-    .chat-lobby { width: 200px; min-width: 160px; }
-    .chat-right { width: 180px; min-width: 160px; }
-    .auth-card { padding: 28px 24px; }
-    .admin-content { padding: 12px; }
+/* ===== 抽屉面板（全平台统一） ===== */
+
+/* 左右面板统一为抽屉，聊天区域始终占满全宽 */
+.chat-lobby, .chat-right {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    z-index: 1050;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--bg-primary);
+    width: 280px;
+    box-shadow: var(--shadow-md);
+    overflow-y: auto;
+}
+
+.chat-lobby {
+    left: 0;
+    transform: translateX(-100%);
+    border-right: none;
+}
+
+.chat-right {
+    right: 0;
+    transform: translateX(100%);
+    flex-direction: column;
+    min-width: unset;
+}
+
+.chat-lobby.show {
+    transform: translateX(0);
+}
+
+.chat-right.show {
+    transform: translateX(0);
+}
+
+/* 遮罩层 */
+.panel-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 1040;
+    backdrop-filter: blur(1px);
+}
+
+.panel-backdrop.show {
+    display: block;
+}
+
+/* 宽屏下的居中约束 */
+@media (min-width: 1200px) {
+    .chat-navbar .container-fluid,
+    .chat-main {
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
+    }
 }
