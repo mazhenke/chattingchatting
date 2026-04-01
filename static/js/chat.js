@@ -28,11 +28,10 @@ const ROOM_GRADIENTS = [
 ];
 
 function formatTime(isoStr) {
-    const tz = (typeof CURRENT_USER !== 'undefined' && CURRENT_USER.timezone) || 'UTC';
     return new Date(isoStr).toLocaleTimeString('zh-CN', {
         hour: '2-digit',
         minute: '2-digit',
-        timeZone: tz
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
     });
 }
 

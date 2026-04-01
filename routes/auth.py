@@ -2,36 +2,10 @@ import uuid
 from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, session
 from flask_login import login_user, logout_user, current_user
-import requests as http_req
 
 from extensions import db, socketio
 from models.user import User
 from services.nickname import fetch_random_nickname
-
-
-def _get_timezone_from_ip(ip):
-    """通过 IP 地址查询时区，查询失败时返回 'UTC'。"""
-    try:
-        # 本地/私有地址无法查询，直接返回 UTC
-        if not ip or ip in ('127.0.0.1', '::1'):
-            return 'UTC'
-        for prefix in ('10.', '172.16.', '172.17.', '172.18.', '172.19.',
-                        '172.20.', '172.21.', '172.22.', '172.23.', '172.24.',
-                        '172.25.', '172.26.', '172.27.', '172.28.', '172.29.',
-                        '172.30.', '172.31.', '192.168.'):
-            if ip.startswith(prefix):
-                return 'UTC'
-        resp = http_req.get(
-            f'http://ip-api.com/json/{ip}?fields=timezone',
-            timeout=2
-        )
-        if resp.ok:
-            tz = resp.json().get('timezone', '')
-            if tz:
-                return tz
-    except Exception:
-        pass
-    return 'UTC'
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -158,7 +132,6 @@ def login():
         db.session.commit()
 
         session['session_id'] = new_sid
-        session['user_timezone'] = _get_timezone_from_ip(request.remote_addr)
         login_user(user)
         return jsonify(success=True, redirect=url_for('chat.chat_page'))
 
